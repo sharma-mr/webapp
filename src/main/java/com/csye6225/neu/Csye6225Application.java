@@ -1,0 +1,19 @@
+package com.csye6225.neu;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+
+@SpringBootApplication
+@ComponentScan(basePackages = {"com.csye6225.neu"})
+@EnableJpaAuditing
+public class Csye6225Application {
+
+	public static void main(String[] args) {
+		SpringApplication.run(Csye6225Application.class, args);
+	}
+
+
+}
