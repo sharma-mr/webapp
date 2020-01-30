@@ -59,13 +59,13 @@ jobs:
 
   workflows:
   version: 2
-  pr_check_workflow:
+  pr-check-workflow:
     jobs:
-    - pr_check
-  build_workflow:
+      - pr_check
+  build_deploy-workflow:
     jobs:
-    - build:
-        filters:
-          branches:
-            only:
-            -master
+      - build:
+          filters:
+            branches:
+              only:
+                - master
