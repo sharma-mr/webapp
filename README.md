@@ -3,7 +3,7 @@
 
 Contact Information-<br /> 
 Mrinal Sharma<br /> 
-NUID 001448287<br /> 
+NUID-001448287<br /> 
 Email- sharma.mr@husky.neu.edu<br /> 
 
 This web application is a java based web application developed on Spring Boot Framework<br /> 
