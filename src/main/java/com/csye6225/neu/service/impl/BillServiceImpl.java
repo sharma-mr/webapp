@@ -37,7 +37,7 @@ public class BillServiceImpl implements BillService {
             throw new UserExistsException(userInfo[0]);
         } else {
             if (checkForPaymentStatus(bill.getPaymentStatus())) {
-                bill.setOwnerid(user.getId());
+                bill.setOwnerId(user.getId());
                 billRepository.save(bill);
                 return new ResponseEntity<Bill>(bill, HttpStatus.CREATED);
             } else {
@@ -66,9 +66,9 @@ public class BillServiceImpl implements BillService {
         User user = authenticateUser(auth);
         UUID uid = UUID.fromString(id);
         Optional<Bill> bill = billRepository.findById(uid);
-        if(bill.isPresent() && bill.get().getOwnerid().equals(user.getId())){
+        if(bill.isPresent() && bill.get().getOwnerId().equals(user.getId())){
             return new ResponseEntity<Bill>(bill.get(), HttpStatus.OK);
-        } else if (bill.isPresent() && !(bill.get().getOwnerid().equals(user.getId()))){
+        } else if (bill.isPresent() && !(bill.get().getOwnerId().equals(user.getId()))){
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -96,11 +96,11 @@ public class BillServiceImpl implements BillService {
         User user = authenticateUser(auth);
         UUID uid = UUID.fromString(id);
         Optional<Bill> billOptional = billRepository.findById(uid);
-        if(billOptional.isPresent() && billOptional.get().getOwnerid().equals(user.getId())){
+        if(billOptional.isPresent() && billOptional.get().getOwnerId().equals(user.getId())){
             bill.setId(uid);
             billRepository.save(bill);
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        } else if (billOptional.isPresent() && !(billOptional.get().getOwnerid().equals(user.getId()))){
+        } else if (billOptional.isPresent() && !(billOptional.get().getOwnerId().equals(user.getId()))){
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -113,10 +113,10 @@ public class BillServiceImpl implements BillService {
         User user = authenticateUser(auth);
         UUID uid = UUID.fromString(id);
         Optional<Bill> bill = billRepository.findById(uid);
-        if(bill.isPresent() && bill.get().getOwnerid().equals(user.getId())){
+        if(bill.isPresent() && bill.get().getOwnerId().equals(user.getId())){
             billRepository.deleteById(uid);
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        } else if (bill.isPresent() && !(bill.get().getOwnerid().equals(user.getId()))){
+        } else if (bill.isPresent() && !(bill.get().getOwnerId().equals(user.getId()))){
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);

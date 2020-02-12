@@ -73,6 +73,10 @@ public class Bill {
     @NotNull(message = "Payment status is required")
     private PaymentStatus paymentStatus;
 
+    @OneToOne(cascade = CascadeType.REMOVE)
+    @JsonProperty("attachment")
+    private FileAttachment fileAttachment;
+
     public UUID getId() {
         return id;
     }
@@ -81,11 +85,11 @@ public class Bill {
         this.id = id;
     }
 
-    public UUID getOwnerid() {
+    public UUID getOwnerId() {
         return ownerId;
     }
 
-    public void setOwnerid(UUID ownerId) {
+    public void setOwnerId(UUID ownerId) {
         this.ownerId = ownerId;
     }
 
@@ -153,4 +157,10 @@ public class Bill {
         this.categories = StringUtils.arrayToCommaDelimitedString(input);
     }
 
+    public FileAttachment getFileAttachment() {
+        return fileAttachment;
+    }
+    public void setFileAttachment(FileAttachment fileAttachment) {
+        this.fileAttachment = fileAttachment;
+    }
 }
