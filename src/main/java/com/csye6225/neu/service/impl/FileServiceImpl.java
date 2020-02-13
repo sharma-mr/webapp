@@ -71,12 +71,15 @@ public class FileServiceImpl implements FileService {
             if (file.isEmpty()) {
                 return new ResponseEntity("please select a file!", HttpStatus.BAD_REQUEST);
             }
-            if(!(extension.get().equals("pdf") || extension.get().equals("jpg") || extension.get().equals("jpeg") || extension.get().equals("png"))) {
-                return new ResponseEntity("Only pdf, jpg, jpeg, png allowed", HttpStatus.BAD_REQUEST);
-            }
+
             if(bill.get().getFileAttachment() != null) {
                 return new ResponseEntity<>("File already exists", HttpStatus.BAD_REQUEST);
             }
+
+            if(!(extension.get().equals("pdf") || extension.get().equals("jpg") || extension.get().equals("jpeg") || extension.get().equals("png"))) {
+                return new ResponseEntity("Only pdf, jpg, jpeg, png allowed", HttpStatus.BAD_REQUEST);
+            }
+
             try {
                 fileAttachement.setFile_name(generateRandomString() + file.getOriginalFilename());
                 fileAttachement.setUrl(UPLOADED_FOLDER + fileAttachement.getFile_name());
