@@ -129,12 +129,16 @@ public class FileServiceImpl implements FileService {
         UUID uidFile = UUID.fromString(fileId);
         UUID uidBill = UUID.fromString(billId);
         Optional<Bill> billOptional = billRepository.findById(uidBill);
+        if(! billOptional.isPresent()) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
         if (billOptional.isPresent() && billOptional.get().getOwnerId().equals(user.getId())) {
             if (billOptional.get().getFileAttachment()!=null && billOptional.get().getFileAttachment().getId().equals(uidFile)) {
                 Optional<FileAttachment> fileOptional = fileRepository.findById(uidFile);
                 if (fileOptional.isPresent()) {
                     if(deleteAfile(fileOptional.get().getUrl())) {
                         billOptional.get().setFileAttachment(null);
+                        fileRepository.deleteById(uidFile);
                         billRepository.save(billOptional.get());
                         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
                     } else {
