@@ -1,12 +1,14 @@
 package com.csye6225.neu.service.impl;
 
 import com.csye6225.neu.dto.Bill;
+import com.csye6225.neu.dto.FileAttachment;
 import com.csye6225.neu.dto.PaymentStatus;
 import com.csye6225.neu.dto.User;
 import com.csye6225.neu.exception.AuthorizationException;
 import com.csye6225.neu.exception.UserExistsException;
 import com.csye6225.neu.exception.ValidationException;
 import com.csye6225.neu.repository.BillRepository;
+import com.csye6225.neu.repository.FileRepository;
 import com.csye6225.neu.repository.UserRepository;
 import com.csye6225.neu.service.BillService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +18,7 @@ import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -27,6 +30,9 @@ public class BillServiceImpl implements BillService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private FileRepository fileRepository;
 
 
     @Override
@@ -99,7 +105,7 @@ public class BillServiceImpl implements BillService {
         if(billOptional.isPresent() && billOptional.get().getOwnerId().equals(user.getId())){
             bill.setId(uid);
             billRepository.save(bill);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            return new ResponseEntity<>(billOptional.get(),HttpStatus.OK);
         } else if (billOptional.isPresent() && !(billOptional.get().getOwnerId().equals(user.getId()))){
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } else {
@@ -113,7 +119,16 @@ public class BillServiceImpl implements BillService {
         User user = authenticateUser(auth);
         UUID uid = UUID.fromString(id);
         Optional<Bill> bill = billRepository.findById(uid);
+        if(bill.isPresent() && bill.get().getFileAttachment() != null) {
+
+        }
         if(bill.isPresent() && bill.get().getOwnerId().equals(user.getId())){
+            if(bill.get().getFileAttachment() != null) {
+                Optional<FileAttachment> fileOptional = fileRepository.findById(bill.get().getFileAttachment().getId());
+                if (fileOptional.isPresent()) {
+                    deleteAfile(fileOptional.get().getUrl());
+                }
+            }
             billRepository.deleteById(uid);
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } else if (bill.isPresent() && !(bill.get().getOwnerId().equals(user.getId()))){
@@ -148,6 +163,22 @@ public class BillServiceImpl implements BillService {
             return user;
         } else {
             throw new AuthorizationException("User is unauthorized");
+        }
+    }
+
+    public boolean deleteAfile(String url) {
+        try{
+
+            File file = new File(url);
+            if(file.delete()){
+                return true;
+            }else{
+                return false;
+            }
+
+        }catch(Exception e){
+            e.printStackTrace();
+            return false;
         }
     }
 }

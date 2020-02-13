@@ -74,7 +74,7 @@ public class Bill {
     private PaymentStatus paymentStatus;
 
     @OneToOne(cascade = CascadeType.REMOVE)
-    @JsonProperty("attachment")
+    @JsonProperty(value = "attachment", access = JsonProperty.Access.READ_ONLY)
     private FileAttachment fileAttachment;
 
     public UUID getId() {
