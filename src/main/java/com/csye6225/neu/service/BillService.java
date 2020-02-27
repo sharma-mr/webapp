@@ -4,6 +4,7 @@ package com.csye6225.neu.service;
 import com.csye6225.neu.dto.Bill;
 
 import com.csye6225.neu.dto.User;
+import com.csye6225.neu.exception.FileStorageException;
 import org.springframework.http.ResponseEntity;
 
 public interface BillService {
@@ -20,6 +21,6 @@ public interface BillService {
 
     public ResponseEntity<Bill> updateBill(String auth, String id, Bill bill);
 
-    public ResponseEntity<Bill> deleteBill(String auth, String id);
+    public ResponseEntity<Bill> deleteBill(String auth, String id) throws FileStorageException;
 
 }

@@ -17,7 +17,23 @@
 	<properties>
 		<java.version>1.8</java.version>
 	</properties>
-
+<!--<profiles>-->
+<!--	<profile>-->
+<!--		<id>default</id>-->
+<!--		<properties>-->
+<!--			<CURRENT_PROFILE>default</CURRENT_PROFILE>-->
+<!--		</properties>-->
+<!--		<activation>-->
+<!--			<activeByDefault>true</activeByDefault>-->
+<!--		</activation>-->
+<!--	</profile>-->
+<!--	<profile>-->
+<!--		<id>aws</id>-->
+<!--		<properties>-->
+<!--			<CURRENT_PROFILE>aws</CURRENT_PROFILE>-->
+<!--		</properties>-->
+<!--	</profile>-->
+<!--</profiles>-->
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -56,6 +72,10 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk-s3</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>pl.pragmatists</groupId>
 			<artifactId>JUnitParams</artifactId>
 			<version>1.1.0</version>
@@ -72,6 +92,18 @@
 			</exclusions>
 		</dependency>
 	</dependencies>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>com.amazonaws</groupId>
+				<artifactId>aws-java-sdk-bom</artifactId>
+				<version>1.11.502</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 	<build>
 		<plugins>
