@@ -1,9 +1,11 @@
 package com.csye6225.neu.service.impl;
 
+import com.csye6225.neu.aws.AmazonClient;
 import com.csye6225.neu.dto.Bill;
 import com.csye6225.neu.dto.FileAttachment;
 import com.csye6225.neu.dto.User;
 import com.csye6225.neu.exception.AuthorizationException;
+import com.csye6225.neu.exception.FileStorageException;
 import com.csye6225.neu.exception.UserExistsException;
 import com.csye6225.neu.repository.BillRepository;
 import com.csye6225.neu.repository.FileRepository;
@@ -11,6 +13,7 @@ import com.csye6225.neu.repository.UserRepository;
 import com.csye6225.neu.service.FileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCrypt;
@@ -24,10 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
-import java.util.Optional;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 
 @Service("fileService")
 public class FileServiceImpl implements FileService {
@@ -44,6 +44,12 @@ public class FileServiceImpl implements FileService {
     @Value("${path.to.file}")
     private String UPLOADED_FOLDER;
 
+    @Value("${spring.profiles.active}")
+    private String[] profiles;
+
+    @Autowired(required = false)
+    private AmazonClient amazonClient;
+
     @Override
     public User authenticateUser(String auth) {
         String[] userInfo = new String(Base64.getDecoder().decode(auth.substring(6).getBytes())).split(":");
@@ -59,13 +65,13 @@ public class FileServiceImpl implements FileService {
         }
     }
 
-    //Add extension check
     @Override
     public ResponseEntity<?> uploadFile(String auth, String id, MultipartFile file) throws IOException, NoSuchAlgorithmException {
         User user = authenticateUser(auth);
         UUID uid = UUID.fromString(id);
         Optional<Bill> bill = billRepository.findById(uid);
         FileAttachment fileAttachement = new FileAttachment();
+        String fileName = "";
         Optional<String> extension = getExtensionByStringHandling(file.getOriginalFilename());
         if (bill.isPresent() && bill.get().getOwnerId().equals(user.getId())) {
             if (file.isEmpty()) {
@@ -81,15 +87,29 @@ public class FileServiceImpl implements FileService {
             }
 
             try {
-                fileAttachement.setFile_name(generateRandomString() + file.getOriginalFilename());
-                fileAttachement.setUrl(UPLOADED_FOLDER + fileAttachement.getFile_name());
-                fileAttachement.setMd5(computeMD5Hash(file.getBytes()));
-                fileAttachement.setSize(Long.toString(file.getSize()));
-                fileAttachement.setBill(bill.get());
-                saveUploadedFiles(file, fileAttachement.getFile_name());
-                bill.get().setFileAttachment(fileAttachement);
-                fileRepository.save(fileAttachement);
-            } catch (IOException e) {
+                List<String> activeProfiles = new ArrayList<>();
+                activeProfiles = Arrays.asList(profiles);
+                if(activeProfiles.contains("default")) {
+                    fileName = generateRandomString() + file.getOriginalFilename();
+                    fileAttachement.setFile_name(fileName);
+                    fileAttachement.setUrl(UPLOADED_FOLDER + fileAttachement.getFile_name());
+                    fileAttachement.setMd5(computeMD5Hash(file.getBytes()));
+                    fileAttachement.setSize(Long.toString(file.getSize()));
+                    fileAttachement.setBill(bill.get());
+                    saveUploadedFiles(file, fileAttachement.getFile_name());
+                    bill.get().setFileAttachment(fileAttachement);
+                    fileRepository.save(fileAttachement);
+                } else if (activeProfiles.contains("aws")){
+                    fileAttachement.setFile_name(fileName);
+                   String url = amazonClient.uploadFile(file);
+                   fileAttachement.setUrl(url);
+                   fileAttachement.setMd5(computeMD5Hash(file.getBytes()));
+                   fileAttachement.setSize(Long.toString(file.getSize()));
+                   fileAttachement.setBill(bill.get());
+                   bill.get().setFileAttachment(fileAttachement);
+                   fileRepository.save(fileAttachement);
+                }
+            } catch (IOException | FileStorageException e) {
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
             return new ResponseEntity(fileAttachement, HttpStatus.CREATED);
@@ -124,11 +144,13 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public ResponseEntity<?> deleteFileById(String auth, String billId, String fileId) {
+    public ResponseEntity<?> deleteFileById(String auth, String billId, String fileId) throws FileStorageException {
         User user = authenticateUser(auth);
         UUID uidFile = UUID.fromString(fileId);
         UUID uidBill = UUID.fromString(billId);
         Optional<Bill> billOptional = billRepository.findById(uidBill);
+        List<String> activeProfiles = new ArrayList<>();
+        activeProfiles = Arrays.asList(profiles);
         if(! billOptional.isPresent()) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
@@ -136,12 +158,19 @@ public class FileServiceImpl implements FileService {
             if (billOptional.get().getFileAttachment()!=null && billOptional.get().getFileAttachment().getId().equals(uidFile)) {
                 Optional<FileAttachment> fileOptional = fileRepository.findById(uidFile);
                 if (fileOptional.isPresent()) {
-                    if(deleteAfile(fileOptional.get().getUrl())) {
+                     if (activeProfiles.contains("default")){
+                        if (deleteAfile(fileOptional.get().getUrl())) {
                         billOptional.get().setFileAttachment(null);
                         fileRepository.deleteById(uidFile);
                         billRepository.save(billOptional.get());
-                        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-                    } else {
+                    }
+                } else if (activeProfiles.contains("aws")) {
+                         amazonClient.deleteFileFromS3Bucket(fileOptional.get().getUrl());
+                         billOptional.get().setFileAttachment(null);
+                         fileRepository.deleteById(uidFile);
+                         billRepository.save(billOptional.get());
+                    }
+                    else {
                         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
                     }
                 } else {
@@ -153,6 +182,7 @@ public class FileServiceImpl implements FileService {
         } else {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
 

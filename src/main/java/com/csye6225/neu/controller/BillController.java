@@ -2,6 +2,7 @@ package com.csye6225.neu.controller;
 
 import com.csye6225.neu.dto.Bill;
 import com.csye6225.neu.dto.User;
+import com.csye6225.neu.exception.FileStorageException;
 import com.csye6225.neu.service.BillService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -55,7 +56,7 @@ public class BillController {
     }
 
     @DeleteMapping(path = "/v1/bill/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    protected ResponseEntity<Bill> deleteBillById(@RequestHeader("authorization") String auth, final @PathVariable(required = true) String id) {
+    protected ResponseEntity<Bill> deleteBillById(@RequestHeader("authorization") String auth, final @PathVariable(required = true) String id) throws FileStorageException {
         if (!auth.isEmpty()) {
             return billService.deleteBill(auth, id);
         } else {

@@ -1,6 +1,7 @@
 package com.csye6225.neu.service;
 
 import com.csye6225.neu.dto.User;
+import com.csye6225.neu.exception.FileStorageException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -15,5 +16,5 @@ public interface FileService {
 
     public ResponseEntity<?> getFileById(String auth, String billId, String fileId);
 
-    public ResponseEntity<?> deleteFileById(String auth, String billId, String fileId);
+    public ResponseEntity<?> deleteFileById(String auth, String billId, String fileId) throws FileStorageException;
 }

@@ -1,10 +1,12 @@
 package com.csye6225.neu.service.impl;
 
+import com.csye6225.neu.aws.AmazonClient;
 import com.csye6225.neu.dto.Bill;
 import com.csye6225.neu.dto.FileAttachment;
 import com.csye6225.neu.dto.PaymentStatus;
 import com.csye6225.neu.dto.User;
 import com.csye6225.neu.exception.AuthorizationException;
+import com.csye6225.neu.exception.FileStorageException;
 import com.csye6225.neu.exception.UserExistsException;
 import com.csye6225.neu.exception.ValidationException;
 import com.csye6225.neu.repository.BillRepository;
@@ -12,6 +14,7 @@ import com.csye6225.neu.repository.FileRepository;
 import com.csye6225.neu.repository.UserRepository;
 import com.csye6225.neu.service.BillService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCrypt;
@@ -33,6 +36,12 @@ public class BillServiceImpl implements BillService {
 
     @Autowired
     private FileRepository fileRepository;
+
+    @Value("${spring.profiles.active}")
+    private String[] profiles;
+
+    @Autowired(required = false)
+    private AmazonClient amazonClient;
 
 
     @Override
@@ -115,27 +124,30 @@ public class BillServiceImpl implements BillService {
     }
 
     @Override
-    public ResponseEntity<Bill> deleteBill(String auth, String id) {
+    public ResponseEntity<Bill> deleteBill(String auth, String id) throws FileStorageException {
         User user = authenticateUser(auth);
         UUID uid = UUID.fromString(id);
         Optional<Bill> bill = billRepository.findById(uid);
-        if(bill.isPresent() && bill.get().getFileAttachment() != null) {
-
-        }
+        List<String> activeProfiles = new ArrayList<>();
+        activeProfiles = Arrays.asList(profiles);
         if(bill.isPresent() && bill.get().getOwnerId().equals(user.getId())){
             if(bill.get().getFileAttachment() != null) {
                 Optional<FileAttachment> fileOptional = fileRepository.findById(bill.get().getFileAttachment().getId());
-                if (fileOptional.isPresent()) {
+                if (fileOptional.isPresent() && activeProfiles.contains("default")) {
                     deleteAfile(fileOptional.get().getUrl());
+                    billRepository.deleteById(uid);
+                } else if(fileOptional.isPresent() && activeProfiles.contains("aws")) {
+                    amazonClient.deleteFileFromS3Bucket(fileOptional.get().getUrl());
+                    billRepository.deleteById(uid);
                 }
+            } else {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            billRepository.deleteById(uid);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+
         } else if (bill.isPresent() && !(bill.get().getOwnerId().equals(user.getId()))){
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-        } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
 
