@@ -30,28 +30,65 @@ jobs:
   build:
     docker:
       - image: circleci/openjdk:8-jdk-stretch
-      - image: circleci/mysql:8.0.19
-        environment: 
-          MYSQL_ROOT_PASSWORD: root 
-          MYSQL_DATABASE: userData
     steps:
       - checkout
       - run:
-          name: Waiting for MySQL to be ready
+          name: Install packages
           command: |
-            for i in `seq 1 10`;
-            do
-              nc -z 127.0.0.1 3306 && echo Success && exit 0
-              echo -n .
-              sleep 1
-            done
-            echo Failed waiting for MySQL && exit 1
+            sudo apt-get update && sudo apt-get install wget zip unzip python-pip python-dev build-essential -y
+            python --version
       - run:
-          name: Maven build
-          command: mvn clean install -Dspring.profiles.active=default
+          name: Install awscli
+          command: sudo pip install awscli
       - run:
-          name: Maven test
-          command: mvn test -Dspring.profiles.active=default
+          name: Compile Artifact
+          command: |
+            ls -ltr
+            echo "Compiling artifact package"
+            mvn clean install -Dspring.profiles.active=default
+            cd target
+            ls -ltr
+            cd ../..
+      - run:
+          name: Compress Artifact
+          command: |
+            echo "The current build number of CircleCI is ${CIRCLE_BUILD_NUM}"
+            pwd
+            echo "current directory content"
+            ls -ltr
+            echo "Creating the artifact directory"
+            mkdir -p artifact
+            echo "Changing directory to artifact"
+            cd artifact
+            echo "Copying yml files to the artifact directory"
+            cp ../*.yml .
+            echo "Copying scripts file to the artifact directory"
+            cp ../scripts/*.sh .
+            echo "Copying jar file to the artifact directory"
+            cp ../target/demo-0.0.1-SNAPSHOT.jar .
+            echo "The directory contents are "
+            ls -ltr
+            echo "Compressing files in the artifact directory"
+            zip -r csye6255-webapp-${CIRCLE_BUILD_NUM}.zip .
+            ls -ltr
+            pwd
+            echo "Inside root directory"
+            cd ..
+            pwd
+            ls -ltr
+      - run:
+          name: Upload Artifact to S3 Bucket
+          command: |
+            echo "Uploading artifact to S3 bucket ${CODE_DEPLOY_S3_BUCKET}"
+            cd artifact
+            aws s3 cp csye6255-webapp-${CIRCLE_BUILD_NUM}.zip s3://${CODE_DEPLOY_S3_BUCKET}
+            cd ..
+      - run:
+          name: Deploy artifact on EC2
+          command: |
+            aws configure set region ${AWS_REGION}
+            echo "Deploying artifact on EC2 instance via codedeploy agent"
+            aws deploy create-deployment --application-name "csye6225-webapp" --deployment-group-name "csye6225-webapp-deployment" --s3-location bucket=${CODE_DEPLOY_S3_BUCKET},bundleType=zip,key=csye6255-webapp-${CIRCLE_BUILD_NUM}.zip
 
 
 workflows:
@@ -62,7 +99,7 @@ workflows:
   build_deploy-workflow:
     jobs:
     - build:
-        filters:
-          branches:
-            only:
-              - master  
+          filters:
+            branches:
+              only:
+                - master
