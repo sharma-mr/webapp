@@ -98,8 +98,8 @@ workflows:
     - pr_check
   build_deploy-workflow:
     jobs:
-    - build
-    filters:
+    - build:
+          filters:
             branches:
               only:
                 - master
