@@ -131,6 +131,10 @@ public class BillServiceImpl implements BillService {
         List<String> activeProfiles = new ArrayList<>();
         activeProfiles = Arrays.asList(profiles);
         if(bill.isPresent() && bill.get().getOwnerId().equals(user.getId())){
+            if(bill.get().getFileAttachment() ==null) {
+                billRepository.deleteById(uid);
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
             if(bill.get().getFileAttachment() != null) {
                 Optional<FileAttachment> fileOptional = fileRepository.findById(bill.get().getFileAttachment().getId());
                 if (fileOptional.isPresent() && activeProfiles.contains("default")) {
