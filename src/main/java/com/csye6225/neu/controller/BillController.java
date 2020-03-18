@@ -32,11 +32,12 @@ public class BillController {
         if (!auth.isEmpty()) {
             logger.info("Calling create bill API");
             statsd.incrementCounter("createBillApi");
-            StopWatch stopWatch = new StopWatch();
-            stopWatch.start();
+            long start = System.currentTimeMillis();
             ResponseEntity<Bill> billCreated =  billService.createBill(auth, bill);
-            stopWatch.stop();
-            statsd.recordExecutionTime("createBillApiTime",stopWatch.getLastTaskTimeMillis());
+            long end = System.currentTimeMillis();
+            long timeElapsed = end - start;
+            logger.info("Time taken by create bill API is " + timeElapsed + "ms");
+            statsd.recordExecutionTime("createBillApiTime",timeElapsed);
             return billCreated;
         } else {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
@@ -46,7 +47,15 @@ public class BillController {
     @GetMapping(path = "/v1/bill/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     protected ResponseEntity<Bill> getBillById(@RequestHeader("authorization") String auth, final @PathVariable(required = true) String id) {
         if (!auth.isEmpty()) {
-            return billService.getBillById(auth, id);
+            logger.info("Calling get bill by Id API");
+            statsd.incrementCounter("getBillByIdApi");
+            long start = System.currentTimeMillis();
+            ResponseEntity<Bill> foundBill = billService.getBillById(auth, id);
+            long end = System.currentTimeMillis();
+            long timeElapsed = end - start;
+            logger.info("Time taken by getBillById API is " + timeElapsed + "ms");
+            statsd.recordExecutionTime("getBillByIdApiTime", timeElapsed);
+            return foundBill;
         } else {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
@@ -55,7 +64,15 @@ public class BillController {
     @GetMapping(path = "/v1/bills", produces = MediaType.APPLICATION_JSON_VALUE)
     protected ResponseEntity<Object> getAllBills(@RequestHeader("authorization") String auth) {
         if (!auth.isEmpty()) {
-            return billService.getAllBills(auth);
+            logger.info("Calling get all bills API");
+            statsd.incrementCounter("getBillsApi");
+            long start = System.currentTimeMillis();
+            ResponseEntity<Object> bills = billService.getAllBills(auth);
+            long end = System.currentTimeMillis();
+            long timeElapsed = end - start;
+            logger.info("Time taken by get all bills API is " + timeElapsed + "ms");
+            statsd.recordExecutionTime("getAllBillsApiTime", timeElapsed);
+            return bills;
         } else {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
@@ -65,7 +82,15 @@ public class BillController {
     @PutMapping(path = "/v1/bill/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     protected ResponseEntity<Bill> updateBillById(@RequestHeader("authorization") String auth, final @PathVariable(required = true) String id, @Valid @RequestBody Bill bill) {
         if (!auth.isEmpty()) {
-            return billService.updateBill(auth, id, bill);
+            logger.info("Calling update bill API");
+            statsd.incrementCounter("updateBillApi");
+            long start = System.currentTimeMillis();
+            ResponseEntity<Bill> updateBill = billService.updateBill(auth, id, bill);
+            long end = System.currentTimeMillis();
+            long timeElapsed = end - start;
+            logger.info("Time taken by update bills API is " + timeElapsed + "ms");
+            statsd.recordExecutionTime("updateBillApiTime", timeElapsed);
+            return updateBill;
         } else {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }

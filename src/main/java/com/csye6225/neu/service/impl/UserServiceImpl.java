@@ -40,12 +40,14 @@ public class UserServiceImpl implements UserService {
             if (validator.validate(user.getPassword())) {
                 String hashedPassword = BCrypt.hashpw(user.getPassword(), BCrypt.gensalt());
                 user.setPassword(hashedPassword);
-                StopWatch stopWatch = new StopWatch();
-                stopWatch.start();
+                long start = System.currentTimeMillis();
                 userRepository.save(user);
                 logger.info("User created succesfully");
-                stopWatch.stop();
-                statsd.recordExecutionTime("createUserSaveDBTime",stopWatch.getLastTaskTimeMillis());
+                logger.trace("User Id :- " + user.getId());
+                long end = System.currentTimeMillis();
+                long timeElapsed = end - start;
+                logger.info("Time taken by save user database call is " + timeElapsed + "ms");
+                statsd.recordExecutionTime("createUserSaveDBTime",timeElapsed);
                 return new ResponseEntity<User>(user, HttpStatus.CREATED);
             } else {
                 logger.error("Use a strong password");
@@ -69,13 +71,22 @@ public class UserServiceImpl implements UserService {
     @Override
     public ResponseEntity<User> getUser(String auth) {
         String[] userInfo = new String(Base64.getDecoder().decode(auth.substring(6).getBytes())).split(":");
+        logger.info("Calling find user database call");
+        long start = System.currentTimeMillis();
         User user = userRepository.findByEmail(userInfo[0]);
+        long end = System.currentTimeMillis();
+        long timeElapsed = end - start;
+        logger.info("Time taken by get user database call is " + timeElapsed + "ms");
+        statsd.recordExecutionTime("getUserDBTime",timeElapsed);
         if (user == null) {
+            logger.error("User does not exist");
             throw new UserExistsException("User does not exist");
         } else {
             if (new BCryptPasswordEncoder().matches(userInfo[1], user.getPassword())) {
+                logger.info("User found");
                 return new ResponseEntity(user, HttpStatus.OK);
             } else {
+                logger.error("Invalid credentials");
                 return new ResponseEntity("Invalid credentials", HttpStatus.UNAUTHORIZED);
             }
         }
@@ -96,9 +107,16 @@ public class UserServiceImpl implements UserService {
                         String hashedPassword = BCrypt.hashpw(userRequest.getPassword(), BCrypt.gensalt());
                         user.setPassword(hashedPassword);
                         user.setAccountUpdated(new Date());
+                        logger.info("Calling update user database call");
+                        long start = System.currentTimeMillis();
                         userRepository.save(user);
+                        long end = System.currentTimeMillis();
+                        long timeElapsed = end - start;
+                        logger.info("Time taken by get update user database call is " + timeElapsed + "ms");
+                        statsd.recordExecutionTime("updateUserDBTime",timeElapsed);
                         return new ResponseEntity(user, HttpStatus.NO_CONTENT);
                     } else {
+                        logger.error("Enter Strong password");
                         throw new ValidationException("Enter Strong password");
                     }
                 } else {
@@ -106,6 +124,7 @@ public class UserServiceImpl implements UserService {
                 }
 
             } else {
+                logger.error("Invalid credentials");
                 return new ResponseEntity("Invalid credentials", HttpStatus.UNAUTHORIZED);
             }
         }
