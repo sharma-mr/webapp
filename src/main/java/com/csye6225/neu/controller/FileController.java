@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StopWatch;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,7 +31,14 @@ public class FileController {
 
     @PostMapping(path ="/v1/bill/{id}/file")
     protected ResponseEntity<?> uploadFile(@RequestHeader("authorization") String auth, final @PathVariable(required = true) String id, @RequestParam("file") MultipartFile file) throws IOException, NoSuchAlgorithmException {
-        return fileService.uploadFile(auth, id, file);
+        logger.info("Calling upload file API");
+        statsd.incrementCounter("uploadFileApi");
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        ResponseEntity<?> fileUploaded =  fileService.uploadFile(auth, id, file);
+        stopWatch.stop();
+        statsd.recordExecutionTime("uploadFileApiTime",stopWatch.getLastTaskTimeMillis());
+        return fileUploaded;
     }
 
     @GetMapping(path = "/v1/bill/{billId}/file/{fileId}", produces = MediaType.APPLICATION_JSON_VALUE)
