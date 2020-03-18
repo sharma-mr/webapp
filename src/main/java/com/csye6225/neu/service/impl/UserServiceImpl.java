@@ -6,6 +6,7 @@ import com.csye6225.neu.exception.ValidationException;
 import com.csye6225.neu.repository.UserRepository;
 import com.csye6225.neu.service.UserService;
 import com.csye6225.neu.utils.ValidationUtils;
+import com.timgroup.statsd.StatsDClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StopWatch;
 
 import java.util.Base64;
 import java.util.Date;
@@ -27,6 +29,9 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private ValidationUtils validator;
 
+    @Autowired
+    private StatsDClient statsd;
+
     private Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 
     @Override
@@ -35,8 +40,12 @@ public class UserServiceImpl implements UserService {
             if (validator.validate(user.getPassword())) {
                 String hashedPassword = BCrypt.hashpw(user.getPassword(), BCrypt.gensalt());
                 user.setPassword(hashedPassword);
+                StopWatch stopWatch = new StopWatch();
+                stopWatch.start();
                 userRepository.save(user);
                 logger.info("User created succesfully");
+                stopWatch.stop();
+                statsd.recordExecutionTime("createUserSaveDBTime",stopWatch.getLastTaskTimeMillis());
                 return new ResponseEntity<User>(user, HttpStatus.CREATED);
             } else {
                 logger.error("Use a strong password");

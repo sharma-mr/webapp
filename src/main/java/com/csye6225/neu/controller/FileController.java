@@ -3,6 +3,9 @@ package com.csye6225.neu.controller;
 import com.csye6225.neu.dto.Bill;
 import com.csye6225.neu.exception.FileStorageException;
 import com.csye6225.neu.service.FileService;
+import com.timgroup.statsd.StatsDClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -19,6 +22,11 @@ public class FileController {
 
     @Autowired
     private FileService fileService;
+
+    @Autowired
+    private StatsDClient statsd;
+
+    private Logger logger = LoggerFactory.getLogger(FileController.class);
 
     @PostMapping(path ="/v1/bill/{id}/file")
     protected ResponseEntity<?> uploadFile(@RequestHeader("authorization") String auth, final @PathVariable(required = true) String id, @RequestParam("file") MultipartFile file) throws IOException, NoSuchAlgorithmException {
