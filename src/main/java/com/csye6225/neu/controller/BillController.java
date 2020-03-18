@@ -36,7 +36,7 @@ public class BillController {
         }
     }
 
-    @GetMapping(path = "/v2/bills", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(path = "/v1/bills", produces = MediaType.APPLICATION_JSON_VALUE)
     protected ResponseEntity<Object> getAllBills(@RequestHeader("authorization") String auth) {
         if (!auth.isEmpty()) {
             return billService.getAllBills(auth);
