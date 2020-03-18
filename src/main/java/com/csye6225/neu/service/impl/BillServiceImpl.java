@@ -13,6 +13,9 @@ import com.csye6225.neu.repository.BillRepository;
 import com.csye6225.neu.repository.FileRepository;
 import com.csye6225.neu.repository.UserRepository;
 import com.csye6225.neu.service.BillService;
+import com.timgroup.statsd.StatsDClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -43,6 +46,11 @@ public class BillServiceImpl implements BillService {
     @Autowired(required = false)
     private AmazonClient amazonClient;
 
+    @Autowired
+    private StatsDClient statsd;
+
+    private Logger logger = LoggerFactory.getLogger(BillServiceImpl.class);
+
 
     @Override
     public ResponseEntity<Bill> createBill(String auth, Bill bill) {
@@ -53,9 +61,16 @@ public class BillServiceImpl implements BillService {
         } else {
             if (checkForPaymentStatus(bill.getPaymentStatus())) {
                 bill.setOwnerId(user.getId());
+                long start = System.currentTimeMillis();
+                logger.info("Calling save bill database call");
                 billRepository.save(bill);
+                long end = System.currentTimeMillis();
+                long timeElapsed = end - start;
+                logger.info("Time taken by save bill database call is " + timeElapsed + "ms");
+                statsd.recordExecutionTime("createBillDatabaseTime",timeElapsed);
                 return new ResponseEntity<Bill>(bill, HttpStatus.CREATED);
             } else {
+                logger.error("Please check your request");
                 throw new ValidationException("Payment Status can only be paid, due, past_due, no_payment_required");
             }
         }
@@ -80,12 +95,20 @@ public class BillServiceImpl implements BillService {
     public ResponseEntity<Bill> getBillById(String auth, String id) {
         User user = authenticateUser(auth);
         UUID uid = UUID.fromString(id);
+        logger.info("Calling get bill by Id database call");
+        long start = System.currentTimeMillis();
         Optional<Bill> bill = billRepository.findById(uid);
         if(bill.isPresent() && bill.get().getOwnerId().equals(user.getId())){
+            long end = System.currentTimeMillis();
+            long timeElapsed = end - start;
+            logger.info("Time taken by get bill by Id database call is " + timeElapsed + "ms");
+            statsd.recordExecutionTime("getBillByIdDatabaseTime",timeElapsed);
+            logger.trace("Bill Id is :- " + bill.get().getId());
             return new ResponseEntity<Bill>(bill.get(), HttpStatus.OK);
         } else if (bill.isPresent() && !(bill.get().getOwnerId().equals(user.getId()))){
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } else {
+            logger.error("Not found");
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
@@ -94,8 +117,14 @@ public class BillServiceImpl implements BillService {
     public ResponseEntity<Object> getAllBills(String auth) {
         User user = authenticateUser(auth);
         if (null != user) {
+            logger.info("Calling get all bills database call");
+            long start = System.currentTimeMillis();
             List<Bill> bills = billRepository.findByOwnerId(user.getId());
             if(!bills.isEmpty()) {
+                long end = System.currentTimeMillis();
+                long timeElapsed = end - start;
+                logger.info("Time taken by get all bills database call is " + timeElapsed + "ms");
+                statsd.recordExecutionTime("getAllBillsDatabaseTime",timeElapsed);
                 return new ResponseEntity<Object>(bills, HttpStatus.OK);
             } else {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -103,7 +132,6 @@ public class BillServiceImpl implements BillService {
         } else {
             throw new UserExistsException("User not found");
         }
-
     }
 
     @Override
@@ -113,7 +141,13 @@ public class BillServiceImpl implements BillService {
         Optional<Bill> billOptional = billRepository.findById(uid);
         if(billOptional.isPresent() && billOptional.get().getOwnerId().equals(user.getId())){
             bill.setId(uid);
+            logger.info("Calling update bill database call");
+            long start = System.currentTimeMillis();
             billRepository.save(bill);
+            long end = System.currentTimeMillis();
+            long timeElapsed = end - start;
+            logger.info("Time taken by update bill database call is " + timeElapsed + "ms");
+            statsd.recordExecutionTime("updateBillDatabaseTime",timeElapsed);
             return new ResponseEntity<>(billOptional.get(),HttpStatus.OK);
         } else if (billOptional.isPresent() && !(billOptional.get().getOwnerId().equals(user.getId()))){
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
@@ -141,7 +175,13 @@ public class BillServiceImpl implements BillService {
                     deleteAfile(fileOptional.get().getUrl());
                     billRepository.deleteById(uid);
                 } else if(fileOptional.isPresent() && activeProfiles.contains("aws")) {
+                    logger.info("Deleting file attached to bill from S3 bucket");
+                    long start = System.currentTimeMillis();
                     amazonClient.deleteFileFromS3Bucket(fileOptional.get().getUrl());
+                    long end = System.currentTimeMillis();
+                    long timeElapsed = end - start;
+                    logger.info("Time taken by S3 to delete the file attached to bill is " + timeElapsed + "ms");
+                    statsd.recordExecutionTime("deleteBillS3Time",timeElapsed);
                     billRepository.deleteById(uid);
                 }
             } else {
@@ -163,6 +203,7 @@ public class BillServiceImpl implements BillService {
         } else if (new BCryptPasswordEncoder().matches(userInfo[1], user.getPassword())) {
             return true;
         } else {
+            logger.error("User is unauthorized");
             throw new AuthorizationException("User is unauthorized");
         }
 
@@ -178,6 +219,7 @@ public class BillServiceImpl implements BillService {
         } else if (BCrypt.checkpw(password, user.getPassword())) {
             return user;
         } else {
+            logger.error("User is unauthorized");
             throw new AuthorizationException("User is unauthorized");
         }
     }

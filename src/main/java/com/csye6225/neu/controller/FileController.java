@@ -33,11 +33,12 @@ public class FileController {
     protected ResponseEntity<?> uploadFile(@RequestHeader("authorization") String auth, final @PathVariable(required = true) String id, @RequestParam("file") MultipartFile file) throws IOException, NoSuchAlgorithmException {
         logger.info("Calling upload file API");
         statsd.incrementCounter("uploadFileApi");
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
+        long start = System.currentTimeMillis();
         ResponseEntity<?> fileUploaded =  fileService.uploadFile(auth, id, file);
-        stopWatch.stop();
-        statsd.recordExecutionTime("uploadFileApiTime",stopWatch.getLastTaskTimeMillis());
+        long end = System.currentTimeMillis();
+        long timeElapsed = end - start;
+        logger.info("Time taken by upload file API is " + timeElapsed + "ms");
+        statsd.recordExecutionTime("uploadFileApiTime", timeElapsed);
         return fileUploaded;
     }
 

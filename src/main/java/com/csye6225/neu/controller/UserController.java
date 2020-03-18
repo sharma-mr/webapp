@@ -33,18 +33,27 @@ public class UserController {
     public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
         logger.info("Calling create user API");
         statsd.incrementCounter("createUserApi");
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
+        long start = System.currentTimeMillis();
         ResponseEntity<User> userCreated = userService.createUser(user);
-        stopWatch.stop();
-        statsd.recordExecutionTime("createUserApiTime",stopWatch.getLastTaskTimeMillis());
+        long end = System.currentTimeMillis();
+        long timeElapsed = end - start;
+        logger.info("Time taken by createUser API is " + timeElapsed + "ms");
+        statsd.recordExecutionTime("createUserApiTime", timeElapsed);
         return userCreated;
     }
 
     @GetMapping("/v1/user/self")
     public ResponseEntity<User> getUser(@RequestHeader("authorization") String auth) {
         if (!auth.isEmpty()) {
-            return userService.getUser(auth);
+            logger.info("Calling get user API");
+            statsd.incrementCounter("getUserApi");
+            long start = System.currentTimeMillis();
+            ResponseEntity<User> userFound = userService.getUser(auth);
+            long end = System.currentTimeMillis();
+            long timeElapsed = end - start;
+            logger.info("Time taken by getUser API is " + timeElapsed + "ms");
+            statsd.recordExecutionTime("getUserApiTime", timeElapsed);
+            return userFound;
         } else {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
@@ -54,7 +63,15 @@ public class UserController {
     @PutMapping("/v1/user/self")
     public ResponseEntity<User> updateUser(@RequestHeader("authorization") String auth, @Valid @RequestBody User user) {
         if (!auth.isEmpty()) {
-            return userService.updateUser(auth, user);
+            logger.info("Calling update user API");
+            statsd.incrementCounter("updateUserApi");
+            long start = System.currentTimeMillis();
+            ResponseEntity<User> updatedUser = userService.updateUser(auth, user);
+            long end = System.currentTimeMillis();
+            long timeElapsed = end - start;
+            logger.info("Time taken by updateUser API is " + timeElapsed + "ms");
+            statsd.recordExecutionTime("updateUserApiTime", timeElapsed);
+            return updatedUser;
         } else {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }

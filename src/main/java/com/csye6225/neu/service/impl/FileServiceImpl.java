@@ -112,11 +112,12 @@ public class FileServiceImpl implements FileService {
                 } else if (activeProfiles.contains("aws")){
                     fileAttachement.setFile_name(fileName);
                     logger.info("Uploading file to S3");
-                    StopWatch stopWatch = new StopWatch();
-                    stopWatch.start();
+                    long start = System.currentTimeMillis();
                    String url = amazonClient.uploadFile(file);
-                   stopWatch.stop();
-                   statsd.recordExecutionTime("uploadFileToS3Time",stopWatch.getLastTaskTimeMillis());
+                    long end = System.currentTimeMillis();
+                    long timeElapsed = end - start;
+                    logger.info("Time taken by S3 to upload the file is " + timeElapsed + "ms");
+                    statsd.recordExecutionTime("uploadFileS3Time",timeElapsed);
                    fileAttachement.setUrl(url);
                    fileAttachement.setMd5(computeMD5Hash(file.getBytes()));
                    fileAttachement.setSize(Long.toString(file.getSize()));
@@ -180,7 +181,13 @@ public class FileServiceImpl implements FileService {
                         billRepository.save(billOptional.get());
                     }
                 } else if (activeProfiles.contains("aws")) {
+                         logger.info("Deleting file from S3 bucket");
+                         long start = System.currentTimeMillis();
                          amazonClient.deleteFileFromS3Bucket(fileOptional.get().getUrl());
+                         long end = System.currentTimeMillis();
+                         long timeElapsed = end - start;
+                         logger.info("Time taken by S3 to delete the file is " + timeElapsed + "ms");
+                         statsd.recordExecutionTime("deleteFileS3Time",timeElapsed);
                          billOptional.get().setFileAttachment(null);
                          fileRepository.deleteById(uidFile);
                          billRepository.save(billOptional.get());
