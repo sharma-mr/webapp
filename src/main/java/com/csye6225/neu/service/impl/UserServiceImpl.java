@@ -6,6 +6,8 @@ import com.csye6225.neu.exception.ValidationException;
 import com.csye6225.neu.repository.UserRepository;
 import com.csye6225.neu.service.UserService;
 import com.csye6225.neu.utils.ValidationUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +27,8 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private ValidationUtils validator;
 
+    private Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
+
     @Override
     public ResponseEntity<User> createUser(User user) {
         if (!userExists(user.getEmail())) {
@@ -32,11 +36,15 @@ public class UserServiceImpl implements UserService {
                 String hashedPassword = BCrypt.hashpw(user.getPassword(), BCrypt.gensalt());
                 user.setPassword(hashedPassword);
                 userRepository.save(user);
+                logger.info("User created succesfully");
                 return new ResponseEntity<User>(user, HttpStatus.CREATED);
             } else {
+                logger.error("Use a strong password");
                 throw new ValidationException("Enter strong password");
+
             }
         } else {
+            logger.error("User already exists");
             throw new UserExistsException(user.getEmail());
         }
     }
