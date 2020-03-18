@@ -32,12 +32,12 @@ public class UserController {
     @RequestMapping(value = "/v1/user", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
         logger.info("Calling create user API");
-        statsd.incrementCounter("UserHttpPost");
+        statsd.incrementCounter("createUserApi");
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         ResponseEntity<User> userCreated = userService.createUser(user);
         stopWatch.stop();
-        statsd.recordExecutionTime("UserHttpPost",stopWatch.getLastTaskTimeMillis());
+        statsd.recordExecutionTime("createUserApiTime",stopWatch.getLastTaskTimeMillis());
         return userCreated;
     }
 

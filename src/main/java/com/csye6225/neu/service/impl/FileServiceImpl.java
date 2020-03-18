@@ -1,6 +1,7 @@
 package com.csye6225.neu.service.impl;
 
 import com.csye6225.neu.aws.AmazonClient;
+import com.csye6225.neu.controller.FileController;
 import com.csye6225.neu.dto.Bill;
 import com.csye6225.neu.dto.FileAttachment;
 import com.csye6225.neu.dto.User;
@@ -11,6 +12,9 @@ import com.csye6225.neu.repository.BillRepository;
 import com.csye6225.neu.repository.FileRepository;
 import com.csye6225.neu.repository.UserRepository;
 import com.csye6225.neu.service.FileService;
+import com.timgroup.statsd.StatsDClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
@@ -18,6 +22,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StopWatch;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -49,6 +54,11 @@ public class FileServiceImpl implements FileService {
 
     @Autowired(required = false)
     private AmazonClient amazonClient;
+
+    @Autowired
+    private StatsDClient statsd;
+
+    private Logger logger = LoggerFactory.getLogger(FileServiceImpl.class);
 
     @Override
     public User authenticateUser(String auth) {
@@ -101,7 +111,12 @@ public class FileServiceImpl implements FileService {
                     fileRepository.save(fileAttachement);
                 } else if (activeProfiles.contains("aws")){
                     fileAttachement.setFile_name(fileName);
+                    logger.info("Uploading file to S3");
+                    StopWatch stopWatch = new StopWatch();
+                    stopWatch.start();
                    String url = amazonClient.uploadFile(file);
+                   stopWatch.stop();
+                   statsd.recordExecutionTime("uploadFileToS3Time",stopWatch.getLastTaskTimeMillis());
                    fileAttachement.setUrl(url);
                    fileAttachement.setMd5(computeMD5Hash(file.getBytes()));
                    fileAttachement.setSize(Long.toString(file.getSize()));
