@@ -76,4 +76,13 @@ public class UserController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
     }
+
+    /**
+     * Method to test health check
+     */
+    @GetMapping("/")
+    @ResponseStatus(HttpStatus.OK)
+    public void testHealthCheck() {
+
+    }
 }
