@@ -1,7 +1,6 @@
 package com.csye6225.neu.controller;
 
 import com.csye6225.neu.dto.Bill;
-import com.csye6225.neu.dto.User;
 import com.csye6225.neu.exception.FileStorageException;
 import com.csye6225.neu.service.BillService;
 import com.timgroup.statsd.StatsDClient;
@@ -11,10 +10,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.StopWatch;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.text.ParseException;
 
 @RestController
 public class BillController {
@@ -100,6 +99,23 @@ public class BillController {
     protected ResponseEntity<Bill> deleteBillById(@RequestHeader("authorization") String auth, final @PathVariable(required = true) String id) throws FileStorageException {
         if (!auth.isEmpty()) {
             return billService.deleteBill(auth, id);
+        } else {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+    }
+
+    @GetMapping(path = "/v1/bills/due/{days}", produces = MediaType.APPLICATION_JSON_VALUE)
+    protected ResponseEntity<Object> getDueBills(@RequestHeader("authorization") String auth, final @PathVariable(required = true) String days) throws ParseException {
+        if (!auth.isEmpty()) {
+            logger.info("Calling due bills API");
+            statsd.incrementCounter("getDueBillsApi");
+            long start = System.currentTimeMillis();
+            ResponseEntity<Object> dueBill = billService.getDueBills(auth, days);
+            long end = System.currentTimeMillis();
+            long timeElapsed = end - start;
+            logger.info("Time taken by getDueBillsApi API is " + timeElapsed + "ms");
+            statsd.recordExecutionTime("getDueBillsApiTime", timeElapsed);
+            return dueBill;
         } else {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }

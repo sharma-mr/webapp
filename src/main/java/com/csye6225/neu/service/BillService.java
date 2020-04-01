@@ -7,6 +7,8 @@ import com.csye6225.neu.dto.User;
 import com.csye6225.neu.exception.FileStorageException;
 import org.springframework.http.ResponseEntity;
 
+import java.text.ParseException;
+
 public interface BillService {
 
     public User authenticateUser(String auth);
@@ -22,5 +24,7 @@ public interface BillService {
     public ResponseEntity<Bill> updateBill(String auth, String id, Bill bill);
 
     public ResponseEntity<Bill> deleteBill(String auth, String id) throws FileStorageException;
+
+    public ResponseEntity<Object> getDueBills(String auth, String days) throws ParseException;
 
 }
