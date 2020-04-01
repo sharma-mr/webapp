@@ -1,6 +1,8 @@
 package com.csye6225.neu.service.impl;
 
 import com.csye6225.neu.aws.AmazonClient;
+
+import com.csye6225.neu.aws.AmazonSQSClient;
 import com.csye6225.neu.dto.Bill;
 import com.csye6225.neu.dto.FileAttachment;
 import com.csye6225.neu.dto.PaymentStatus;
@@ -25,6 +27,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -45,6 +51,9 @@ public class BillServiceImpl implements BillService {
 
     @Autowired(required = false)
     private AmazonClient amazonClient;
+
+    @Autowired(required = false)
+    private AmazonSQSClient amazonSQSClient;
 
     @Autowired
     private StatsDClient statsd;
@@ -194,6 +203,28 @@ public class BillServiceImpl implements BillService {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
+    @Override
+    public ResponseEntity<Object> getDueBills(String auth, String days) throws ParseException {
+        User user = authenticateUser(auth);
+        LocalDate localDate = LocalDate.now();
+        String startDate = DateTimeFormatter.ofPattern("yyyy/MM/dd").format(localDate);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+        Calendar c = Calendar.getInstance();
+        c.setTime(new Date());
+        c.add(Calendar.DATE, Integer.parseInt(days));
+        String futureDate = sdf.format(c.getTime());
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy/MM/dd");
+        Date todayDate = formatter.parse(startDate);
+        Date endDate = formatter.parse(futureDate);
+        List<Bill> bills = billRepository.findAllByDueDateBetween(todayDate,endDate);
+        if(!bills.isEmpty())
+        amazonSQSClient.sendMessage(bills);
+        if(!bills.isEmpty())
+        return new ResponseEntity<Object>(bills, HttpStatus.OK);
+        else {
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+    }
 
     private boolean validateUser(String auth) {
         String[] userInfo = new String(Base64.getDecoder().decode(auth.substring(6).getBytes())).split(":");
