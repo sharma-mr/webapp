@@ -17,23 +17,6 @@
 	<properties>
 		<java.version>1.8</java.version>
 	</properties>
-<!--<profiles>-->
-<!--	<profile>-->
-<!--		<id>default</id>-->
-<!--		<properties>-->
-<!--			<CURRENT_PROFILE>default</CURRENT_PROFILE>-->
-<!--		</properties>-->
-<!--		<activation>-->
-<!--			<activeByDefault>true</activeByDefault>-->
-<!--		</activation>-->
-<!--	</profile>-->
-<!--	<profile>-->
-<!--		<id>aws</id>-->
-<!--		<properties>-->
-<!--			<CURRENT_PROFILE>aws</CURRENT_PROFILE>-->
-<!--		</properties>-->
-<!--	</profile>-->
-<!--</profiles>-->
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
