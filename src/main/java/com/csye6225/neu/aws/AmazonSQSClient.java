@@ -11,6 +11,7 @@ import com.csye6225.neu.dto.Bill;
 import com.csye6225.neu.service.impl.BillServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -24,8 +25,11 @@ public class AmazonSQSClient {
 
     private AmazonSQS amazonSQSClient;
 
-    @Value("${appDomainName}")
-    private String domainName;
+    @Autowired
+    private AmazonSNSClient amazonSNSClient;
+
+    @Value("${app.domainName}")
+    private String appDomainName;
 
     private final static String QUEUE = "due-bill-queue";
 
@@ -43,7 +47,7 @@ public class AmazonSQSClient {
             for (Bill bill : bills) {
                 SendMessageRequest messageRequest = new SendMessageRequest()
                         .withQueueUrl(queueUrl)
-                        .withMessageBody("http://" + domainName + "v1/bill" + bill.getId());
+                        .withMessageBody("http://" + appDomainName + "v1/bill" + bill.getId());
                 amazonSQSClient.sendMessage(messageRequest);
                 logger.info("Pushed message to queue with bill id :- " + bill.getId());
             }
@@ -58,7 +62,8 @@ public class AmazonSQSClient {
     private void receiveMessageAndDelete() {
         String queueUrl = amazonSQSClient.getQueueUrl(QUEUE).getQueueUrl();
         List<Message> receivedMessageList = amazonSQSClient.receiveMessage(amazonSQSClient.getQueueUrl(QUEUE).getQueueUrl()).getMessages();
-        for (Message message : receivedMessageList) {
+        for(Message message : receivedMessageList) {
+            amazonSNSClient.publish(message.getBody());
             amazonSQSClient.deleteMessage(queueUrl, message.getReceiptHandle());
         }
     }
