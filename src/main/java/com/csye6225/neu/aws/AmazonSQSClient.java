@@ -49,7 +49,7 @@ public class AmazonSQSClient {
             StringBuilder messageString = new StringBuilder();
             messageString.append(email);
             for (Bill bill : bills) {
-                messageString.append(bill.getId());
+                messageString.append("http://" + appDomainName + "v1/bill"+ bill.getId());
                 messageString.append(",");
                 logger.info("Pushed message to queue with bill id :- " + bill.getId());
             }
