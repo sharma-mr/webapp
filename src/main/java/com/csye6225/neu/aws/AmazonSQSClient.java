@@ -24,10 +24,10 @@ public class AmazonSQSClient {
 
     private AmazonSQS amazonSQSClient;
 
-    @Value("${domainName}")
+    @Value("${appDomainName}")
     private String domainName;
 
-    private final static String QUEUE = "csye6225";
+    private final static String QUEUE = "due-bill-queue";
 
     private Logger logger = LoggerFactory.getLogger(AmazonSQSClient.class);
 
