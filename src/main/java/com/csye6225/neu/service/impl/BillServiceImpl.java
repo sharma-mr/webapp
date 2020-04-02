@@ -218,9 +218,9 @@ public class BillServiceImpl implements BillService {
         Date endDate = formatter.parse(futureDate);
         List<Bill> bills = billRepository.findAllByDueDateBetween(todayDate,endDate);
         if(!bills.isEmpty())
-        amazonSQSClient.sendMessage(bills);
+        amazonSQSClient.sendMessage(bills,user.getEmail());
         if(!bills.isEmpty())
-        return new ResponseEntity<Object>(bills, HttpStatus.OK);
+        return new ResponseEntity<Object>(bills, HttpStatus.NO_CONTENT);
         else {
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }

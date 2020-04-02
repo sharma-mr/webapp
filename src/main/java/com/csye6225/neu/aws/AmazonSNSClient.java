@@ -27,7 +27,7 @@ public class AmazonSNSClient {
     private Logger logger = LoggerFactory.getLogger(AmazonSNSClient.class);
 
     @PostConstruct
-    private void initializeAmazon() {
+    private void init() {
         this.snsClient = AmazonSNSClientBuilder.standard().withRegion(Regions.US_EAST_1)
                 .withCredentials(DefaultAWSCredentialsProviderChain.getInstance()).build();
     }
