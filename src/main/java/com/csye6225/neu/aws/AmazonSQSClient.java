@@ -1,5 +1,7 @@
 package com.csye6225.neu.aws;
 
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
@@ -36,8 +38,8 @@ public class AmazonSQSClient {
     private Logger logger = LoggerFactory.getLogger(AmazonSQSClient.class);
 
     @PostConstruct
-    private void initializeAmazon() {
-        this.amazonSQSClient = new com.amazonaws.services.sqs.AmazonSQSClient();
+    private void loadAmazonSQSClient() {
+        this.amazonSQSClient = AmazonSQSClientBuilder.standard().withRegion(Regions.US_EAST_1).withCredentials(DefaultAWSCredentialsProviderChain.getInstance()).build();
     }
 
     public void sendMessage(List<Bill> bills) {
