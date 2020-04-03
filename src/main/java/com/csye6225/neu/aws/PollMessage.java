@@ -14,7 +14,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 public class PollMessage {
 
     @Autowired(required = false)
-    private AmazonSQSClient amazonSQSClient;
+    public AmazonSQSClient amazonSQSClient;
 
     private Logger logger = LoggerFactory.getLogger(PollMessage.class);
 

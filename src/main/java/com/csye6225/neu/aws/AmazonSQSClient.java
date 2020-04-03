@@ -47,7 +47,7 @@ public class AmazonSQSClient {
             CreateQueueResult create_result = amazonSQSClient.createQueue(QUEUE);
             String queueUrl = amazonSQSClient.getQueueUrl(QUEUE).getQueueUrl();
             StringBuilder messageString = new StringBuilder();
-            messageString.append(email);
+            messageString.append(email + ",");
             for (Bill bill : bills) {
                 messageString.append("http://" + appDomainName + "v1/bill"+ bill.getId());
                 messageString.append(",");
@@ -64,12 +64,13 @@ public class AmazonSQSClient {
         }
     }
 
-    @Scheduled(cron = "0 0/1 * 1/1 * ? *")
-    private void receiveMessageAndDelete() {
+    //@Scheduled(cron = "0 0/1 * 1/1 * ?")
+    public void receiveMessageAndDelete() {
         String queueUrl = amazonSQSClient.getQueueUrl(QUEUE).getQueueUrl();
         List<Message> receivedMessageList = amazonSQSClient.receiveMessage(amazonSQSClient.getQueueUrl(QUEUE).getQueueUrl()).getMessages();
         for(Message message : receivedMessageList) {
-            if (message !=null && !message.getBody().isEmpty()) {
+            if (message.getBody() !=null && !message.getBody().isEmpty()) {
+                logger.info("Recceving message" + message.getBody());
                 amazonSNSClient.publish(message.getBody());
                 amazonSQSClient.deleteMessage(queueUrl, message.getReceiptHandle());
             }
