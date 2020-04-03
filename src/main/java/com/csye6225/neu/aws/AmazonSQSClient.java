@@ -23,6 +23,7 @@ import java.util.List;
 
 @Service("amazonSQSService")
 @Profile("aws")
+@EnableScheduling
 public class AmazonSQSClient {
 
     private AmazonSQS amazonSQSClient;
@@ -44,6 +45,7 @@ public class AmazonSQSClient {
 
     public void sendMessage(List<Bill> bills, String email) {
         try {
+            receiveMessageAndDelete();
             CreateQueueResult create_result = amazonSQSClient.createQueue(QUEUE);
             String queueUrl = amazonSQSClient.getQueueUrl(QUEUE).getQueueUrl();
             StringBuilder messageString = new StringBuilder();
@@ -56,6 +58,7 @@ public class AmazonSQSClient {
             SendMessageRequest messageRequest = new SendMessageRequest()
                     .withQueueUrl(queueUrl).withMessageBody(messageString.toString());
             amazonSQSClient.sendMessage(messageRequest);
+            receiveMessageAndDelete();
         } catch (AmazonSQSException exception) {
             if (!exception.getErrorCode().equals("The queue already exists" )) {
                 logger.error(exception.getMessage());
@@ -64,8 +67,9 @@ public class AmazonSQSClient {
         }
     }
 
-    //@Scheduled(cron = "0 0/1 * 1/1 * ?")
+    @Scheduled(cron = "0 0/1 * 1/1 * ?")
     public void receiveMessageAndDelete() {
+        logger.info("Inside  receiveMessageAndDelete");
         String queueUrl = amazonSQSClient.getQueueUrl(QUEUE).getQueueUrl();
         List<Message> receivedMessageList = amazonSQSClient.receiveMessage(amazonSQSClient.getQueueUrl(QUEUE).getQueueUrl()).getMessages();
         for(Message message : receivedMessageList) {

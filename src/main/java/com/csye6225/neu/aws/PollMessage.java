@@ -8,19 +8,19 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 
-@Configuration
-@EnableScheduling
-@Profile("aws")
-public class PollMessage {
-
-    @Autowired(required = false)
-    public AmazonSQSClient amazonSQSClient;
-
-    private Logger logger = LoggerFactory.getLogger(PollMessage.class);
-
-    @Scheduled(fixedRate=1000)
-    public void pollQueue(){
-        amazonSQSClient.receiveMessageAndDelete();
-    }
-
-}
+//@Configuration
+//@EnableScheduling
+//@Profile("aws")
+//public class PollMessage {
+//
+//    @Autowired(required = false)
+//    public AmazonSQSClient amazonSQSClient;
+//
+//    private Logger logger = LoggerFactory.getLogger(PollMessage.class);
+//
+//    @Scheduled(fixedRate=1000)
+//    public void pollQueue(){
+//        amazonSQSClient.receiveMessageAndDelete();
+//    }
+//
+//}
