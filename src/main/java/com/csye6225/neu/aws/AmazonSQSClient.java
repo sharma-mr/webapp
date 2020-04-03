@@ -69,12 +69,12 @@ public class AmazonSQSClient {
 
     @Scheduled(cron = "0 0/1 * 1/1 * ?")
     public void receiveMessageAndDelete() {
-        logger.info("Inside  receiveMessageAndDelete");
+        logger.info("Inside receiveMessageAndDelete method");
         String queueUrl = amazonSQSClient.getQueueUrl(QUEUE).getQueueUrl();
         List<Message> receivedMessageList = amazonSQSClient.receiveMessage(amazonSQSClient.getQueueUrl(QUEUE).getQueueUrl()).getMessages();
         for(Message message : receivedMessageList) {
             if (message.getBody() !=null && !message.getBody().isEmpty()) {
-                logger.info("Recceving message" + message.getBody());
+                logger.info("Receiving message" + message.getBody());
                 amazonSNSClient.publish(message.getBody());
                 amazonSQSClient.deleteMessage(queueUrl, message.getReceiptHandle());
             }
